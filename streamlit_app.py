@@ -26,10 +26,8 @@ def run_query(conn, query):
     try:
         cursor = conn.cursor()
         cursor.execute(query)
-        # Fetch results and column names
         results = cursor.fetchall()
         colnames = [desc[0] for desc in cursor.description]
-        # Convert results to Pandas DataFrame
         return pd.DataFrame(results, columns=colnames)
     except Exception as e:
         st.error(f"Error running query: {e}")
@@ -41,11 +39,11 @@ if not conn:
     st.stop()
 
 st.title("Retail Order Data Analyst Mini Project")
-choice=st.sidebar.radio(label="**Hello every one :sunglasses: and welcome to see my menu**",options=("Guvi Query","Own Query"))
+choice = st.sidebar.radio("**Hello everyone :sunglasses: and welcome to my menu**", ("Guvi Query📊", "Own Query📈"))
 
 
-if choice=="Guvi Query":
-    queries = {
+#Queries Dictionary
+guvi_queries = {
             "1. Find top 10 highest revenue generating products": """select o.category,s.product_id,cast(sum(s.sale_price*s.quantity)as int) as total_revenue
     from sales_details as s join order_details as o on o.order_id=s.order_id
     group by o.category,s.product_id order by total_revenue desc limit 10;
@@ -78,63 +76,9 @@ if choice=="Guvi Query":
     from sales_details as s join order_details as o on o.order_id=s.order_id group by year;
     """
         }
-    
-    # Select query from dropdown
-    selected_query = st.selectbox("Guvi Query", list(queries.keys()))
-    query = queries[selected_query]  
-    # Run and display results
-    data = run_query(conn, query) 
-    if not data.empty:
-            st.subheader(f"Results for: {selected_query}")
-            st.dataframe(data)  # Display results in a table
 
-            
-            # Visualization selectbox Button
-            chart_type = st.selectbox("**Choose Visualization Type:**", ["Line Chart", "Bar Chart", "Area Chart", "Scatter Plot",
-            "Pie Chart", "Histogram", "Box Plot", "Heatmap", "Violin Plot"])
-                
-            # Table View
-            if chart_type == "Line Chart":
-                st.line_chart(data.set_index(data.columns[0]))
-                
-            elif chart_type == "Bar Chart":
-                st.bar_chart(data.set_index(data.columns[0]))
-                
-            elif chart_type == "Area Chart":
-                st.area_chart(data.set_index(data.columns[0]))
-                
-            elif chart_type == "Scatter Plot":
-                fig = px.scatter(data, x=data.columns[0], y=data.columns[1])
-                st.plotly_chart(fig)
-                
-            elif chart_type == "Pie Chart":
-                fig = px.pie(data, names=data.columns[0], values=data.columns[1])
-                st.plotly_chart(fig)
-                
-            elif chart_type == "Histogram":
-                fig = px.histogram(data, x=data.columns[1])
-                st.plotly_chart(fig)
-                
-            elif chart_type == "Box Plot":
-                fig = px.box(data, x=data.columns[0], y=data.columns[1])
-                st.plotly_chart(fig)
-                
-            elif chart_type == "Heatmap":
-                fig, ax = plt.subplots()
-                sns.heatmap(data.corr(), annot=True, cmap="coolwarm", ax=ax)
-                st.pyplot(fig)
-                
-            elif chart_type == "Violin Plot":
-                fig, ax = plt.subplots()
-                sns.violinplot(x=data.columns[0], y=data.columns[1], data=data, ax=ax)
-                st.pyplot(fig)
-                
-            else:
-                st.warning("No data returned for this query.")    
-        
 
-elif choice=="Own Query":
-    queries ={
+own_queries ={
         "1. Identify the top-selling product in each region":"""select o.region,o.category,cast(sum(s.quantity*s.sale_price)as int) as total_sales from sales_details as s
     join order_details as o on o.order_id=s.order_id group by region,category order by total_sales desc limit 10;
     """,
@@ -171,57 +115,54 @@ elif choice=="Own Query":
     """
     }
 
-# Select query from dropdown
-selected_query = st.selectbox("Own Query", list(queries.keys()))
-query = queries[selected_query]  
- # Run and display results
-data = run_query(conn, query)
-if not data.empty:
-        st.subheader(f"Results for: {selected_query}")
-        st.dataframe(data)  # Display results in a table
+# Select appropriate queries
+queries = guvi_queries if choice == "Guvi Query" else own_queries
+selected_query = st.selectbox("**Select Query**", list(queries.keys()))
+query = queries[selected_query]
 
-        
-        # Visualization select box Button
-        chart_type = st.selectbox("**Choose Visualization Type:**", ["Line Chart", "Bar Chart", "Area Chart", "Scatter Plot",
-        "Pie Chart", "Histogram", "Box Plot", "Heatmap", "Violin Plot"],key="chart_type_selectbox")
-            
-        # Table View
-        if chart_type == "Line Chart":
-            st.line_chart(data.set_index(data.columns[0]))
-            
-        elif chart_type == "Bar Chart":
-            st.bar_chart(data.set_index(data.columns[0]))
-            
-        elif chart_type == "Area Chart":
-            st.area_chart(data.set_index(data.columns[0]))
-            
-        elif chart_type == "Scatter Plot":
-            fig = px.scatter(data, x=data.columns[0], y=data.columns[1])
-            st.plotly_chart(fig)
-            
-        elif chart_type == "Pie Chart":
-            fig = px.pie(data, names=data.columns[0], values=data.columns[1])
-            st.plotly_chart(fig)
-            
-        elif chart_type == "Histogram":
-            fig = px.histogram(data, x=data.columns[1])
-            st.plotly_chart(fig)
-            
-        elif chart_type == "Box Plot":
-            fig = px.box(data, x=data.columns[0], y=data.columns[1])
-            st.plotly_chart(fig)
-            
-        elif chart_type == "Heatmap":
+
+# Run and display results
+data = run_query(conn, query) 
+if not data.empty:
+    st.subheader(f"Results for: {selected_query}")
+    st.dataframe(data)
+
+    # Visualization Type Selection
+    chart_type = st.selectbox("**Choose Visualization Type**", 
+                              ["Line Chart", "Bar Chart", "Area Chart", "Scatter Plot", 
+                               "Pie Chart", "Histogram", "Box Plot", "Heatmap", "Violin Plot"])
+
+    # Visualization Logic
+    if chart_type == "Line Chart":
+        st.line_chart(data.set_index(data.columns[0]))
+    elif chart_type == "Bar Chart":
+        st.bar_chart(data.set_index(data.columns[0]))
+    elif chart_type == "Area Chart":
+        st.area_chart(data.set_index(data.columns[0]))
+    elif chart_type == "Scatter Plot":
+        fig = px.scatter(data, x=data.columns[0], y=data.columns[1])
+        st.plotly_chart(fig)
+    elif chart_type == "Pie Chart":
+        fig = px.pie(data, names=data.columns[0], values=data.columns[1])
+        st.plotly_chart(fig)
+    elif chart_type == "Histogram":
+        fig = px.histogram(data, x=data.columns[1])
+        st.plotly_chart(fig)
+    elif chart_type == "Box Plot":
+        fig = px.box(data, x=data.columns[0], y=data.columns[1])
+        st.plotly_chart(fig)
+    elif chart_type == "Heatmap":
+        if len(data.select_dtypes(include='number').columns) > 1:
             fig, ax = plt.subplots()
             sns.heatmap(data.corr(), annot=True, cmap="coolwarm", ax=ax)
             st.pyplot(fig)
-            
-        elif chart_type == "Violin Plot":
-            fig, ax = plt.subplots()
-            sns.violinplot(x=data.columns[0], y=data.columns[1], data=data, ax=ax)
-            st.pyplot(fig)
-            
         else:
-            st.warning("No data returned for this query.")    
+            st.warning("Not enough numeric columns for Heatmap.")
+    elif chart_type == "Violin Plot":
+        fig, ax = plt.subplots()
+        sns.violinplot(x=data.columns[0], y=data.columns[1], data=data, ax=ax)
+        st.pyplot(fig)
+else:
+    st.warning("No data returned for this query.")
 
-st.write("hello")
+st.write("Thank you for exploring! 🎉")
